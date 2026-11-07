@@ -1,0 +1,173 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0a0a0a;
+  overflow: hidden;
+  font-family: "Courier New", monospace;
+  color: #e0e0e0;
+  cursor: none;
+}
+
+#game {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  background: #111;
+  image-rendering: pixelated;
+}
+
+#crosshair {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  color: #ff2222;
+  pointer-events: none;
+  text-shadow: 0 0 4px #000;
+  z-index: 20;
+  font-weight: bold;
+}
+
+#ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#title-screen, #death-screen {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 5, 5, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: auto;
+  padding: 20px;
+}
+
+#title-screen h1 {
+  font-size: 3.2rem;
+  color: #c41e3a;
+  text-shadow: 0 0 20px #8b0000, 3px 3px 0 #000;
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 1.4rem;
+  color: #aaa;
+  margin-bottom: 20px;
+}
+
+.desc {
+  color: #888;
+  max-width: 420px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.controls {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  padding: 14px 22px;
+  margin-bottom: 28px;
+  font-size: 0.95rem;
+  color: #ccc;
+  line-height: 1.7;
+}
+
+#start-btn, #restart-btn {
+  background: #8b0000;
+  color: #fff;
+  border: none;
+  padding: 14px 36px;
+  font-size: 1.15rem;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+  pointer-events: auto;
+}
+
+#start-btn:hover, #restart-btn:hover {
+  background: #c41e3a;
+}
+
+.warning {
+  margin-top: 22px;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.restart-hint {
+  margin: 16px 0 12px;
+  color: #ccc;
+  font-size: 1.05rem;
+}
+
+#hud {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 24px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+
+#weapon-name {
+  color: #ff4444;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #000;
+}
+
+#health {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+#ammo {
+  color: #ffaa00;
+}
+
+#message {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.7);
+  padding: 8px 18px;
+  color: #ff6666;
+  font-size: 1.05rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#message.show {
+  opacity: 1;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#death-screen h2 {
+  font-size: 3rem;
+  color: #c41e3a;
+  margin-bottom: 12px;
+  text-shadow: 0 0 15px #8b0000;
+}
