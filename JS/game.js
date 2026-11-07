@@ -143,10 +143,10 @@ let swingProgress = 0;
 // ---------- ENEMIES ----------
 const enemies = [];
 const enemyTypes = [
-  { name: "Гопник", hp: 45, speed: 0.018, damage: 8, color: "#6688aa", size: 0.55 },
-  { name: "Скин", hp: 70, speed: 0.022, damage: 14, color: "#aa4444", size: 0.6 },
-  { name: "Нарк", hp: 35, speed: 0.028, damage: 6, color: "#88aa66", size: 0.5 },
-  { name: "Мент", hp: 95, speed: 0.014, damage: 18, color: "#4466aa", size: 0.65 }
+  { name: "Гопник", hp: 45, speed: 0.010, damage: 8, color: "#6688aa", size: 0.55, vision: 8, attackRange: 1.15 },
+  { name: "Скин", hp: 70, speed: 0.012, damage: 14, color: "#aa4444", size: 0.6, vision: 9, attackRange: 1.2 },
+  { name: "Нарк", hp: 35, speed: 0.015, damage: 6, color: "#88aa66", size: 0.5, vision: 7, attackRange: 1.05 },
+  { name: "Мент", hp: 95, speed: 0.008, damage: 18, color: "#4466aa", size: 0.65, vision: 11, attackRange: 1.25 }
 ];
 
 function spawnEnemies() {
@@ -169,11 +169,18 @@ function spawnEnemies() {
         color: type.color,
         size: type.size,
         name: type.name,
+        vision: type.vision,
+        attackRange: type.attackRange,
         state: "idle",
         attackCd: 0,
         hitFlash: 0,
         dead: false,
-        stagger: 0
+        stagger: 0,
+        patrolAngle: Math.random() * Math.PI * 2,
+        patrolTimer: 40 + Math.random() * 80,
+        alertTimer: 0,
+        lastSeenX: mx + 0.5,
+        lastSeenY: my + 0.5
       });
     }
   }
@@ -280,6 +287,7 @@ function startGame() {
   deathScreen.classList.add("hidden");
   hud.classList.remove("hidden");
   crosshair.classList.remove("hidden");
+  document.body.classList.remove("show-cursor");
   gameRunning = true;
   updateHUD();
   canvas.requestPointerLock();
@@ -292,6 +300,7 @@ function die() {
   hud.classList.add("hidden");
   crosshair.classList.add("hidden");
   deathScreen.classList.remove("hidden");
+  document.body.classList.add("show-cursor");
 }
 
 document.getElementById("start-btn").addEventListener("click", startGame);
@@ -457,13 +466,14 @@ function spawnBlood(x, y, count) {
 
 function initSnow() {
   snowParticles = [];
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 180; i++) {
     snowParticles.push({
       x: Math.random() * width,
       y: Math.random() * height,
-      speed: 0.6 + Math.random() * 1.4,
-      size: 1 + Math.random() * 2,
-      drift: (Math.random() - 0.5) * 0.4
+      speed: 0.5 + Math.random() * 1.8,
+      size: 1 + Math.random() * 2.8,
+      drift: (Math.random() - 0.5) * 0.55,
+      alpha: 0.35 + Math.random() * 0.55
     });
   }
 }
@@ -501,22 +511,46 @@ function castRay(angle) {
   return { dist, hit, side, hitX, hitY };
 }
 
-function getWallColor(type, side, dist) {
+function getWallColor(type, side, dist, hitX, hitY) {
   let r, g, b;
   switch (type) {
-    case 1: r = 90; g = 90; b = 100; break;      // panel
-    case 2: r = 110; g = 70; b = 50; break;      // brick
-    case 3: r = 60; g = 70; b = 80; break;       // metal
-    case 4: r = 70; g = 65; b = 55; break;       // dirty
-    default: r = 80; g = 80; b = 80;
+    case 1: r = 95; g = 95; b = 108; break;      // panel
+    case 2: r = 125; g = 78; b = 55; break;      // brick
+    case 3: r = 68; g = 78; b = 90; break;       // metal
+    case 4: r = 78; g = 72; b = 60; break;       // dirty
+    default: r = 85; g = 85; b = 85;
   }
+
+  // Procedural texture based on world hit position
+  const u = (side ? hitY : hitX);
+  const tex = Math.floor(u * 8) % 8;
+  let texMul = 1;
+  if (type === 2) {
+    // Brick mortar lines
+    const brickRow = Math.floor(u * 4) % 2;
+    const brickCol = Math.floor((side ? hitX : hitY) * 3) % 3;
+    if (brickCol === 0) texMul = 0.72;
+    else texMul = 0.92 + (brickRow * 0.06);
+  } else if (type === 1) {
+    // Panel seams
+    if (tex === 0 || tex === 4) texMul = 0.78;
+    else texMul = 0.95 + (tex % 3) * 0.02;
+  } else if (type === 3) {
+    // Metal rivets / panels
+    if (tex % 3 === 0) texMul = 0.82;
+    else texMul = 1.05;
+  } else if (type === 4) {
+    // Dirty blotches
+    texMul = 0.85 + ((Math.sin(u * 12) + 1) * 0.08);
+  }
+
   // Distance fog + side darkening
-  const fog = Math.max(0.25, 1 - dist / 14);
-  const shade = side ? 0.7 : 1;
-  r = Math.floor(r * fog * shade);
-  g = Math.floor(g * fog * shade);
-  b = Math.floor(b * fog * shade);
-  return `rgb(${r},${g},${b})`;
+  const fog = Math.max(0.22, 1 - dist / 13.5);
+  const shade = side ? 0.68 : 1;
+  r = Math.floor(r * fog * shade * texMul);
+  g = Math.floor(g * fog * shade * texMul);
+  b = Math.floor(b * fog * shade * texMul);
+  return `rgb(${Math.min(255,r)},${Math.min(255,g)},${Math.min(255,b)})`;
 }
 
 // ---------- UPDATE ----------
@@ -564,39 +598,88 @@ function update(dt) {
     attack();
   }
 
-  // Enemies AI
+  // Line of sight: true if no wall between enemy and player
+  function hasLineOfSight(ex, ey, px, py) {
+    const dx = px - ex;
+    const dy = py - ey;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 0.3) return true;
+    const steps = Math.ceil(dist / 0.15);
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps;
+      const mx = Math.floor(ex + dx * t);
+      const my = Math.floor(ey + dy * t);
+      if (mx < 0 || my < 0 || mx >= MAP_W || my >= MAP_H) return false;
+      if (map[my][mx] > 0) return false;
+    }
+    return true;
+  }
+
+  // Enemies AI — idle / patrol / chase / attack
   for (const en of enemies) {
     if (en.dead) continue;
     if (en.stagger > 0) { en.stagger--; continue; }
     if (en.hitFlash > 0) en.hitFlash--;
+    if (en.attackCd > 0) en.attackCd -= dt;
 
     const dx = player.x - en.x;
     const dy = player.y - en.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
+    const canSee = dist < en.vision && hasLineOfSight(en.x, en.y, player.x, player.y);
 
-    if (dist < 9) {
-      // Chase
-      const nx = dx / dist;
-      const ny = dy / dist;
-      const speed = en.speed;
-      const newX = en.x + nx * speed;
-      const newY = en.y + ny * speed;
-      if (map[Math.floor(en.y)][Math.floor(newX)] === 0) en.x = newX;
-      if (map[Math.floor(newY)][Math.floor(en.x)] === 0) en.y = newY;
+    if (canSee) {
+      en.state = dist < en.attackRange ? "attack" : "chase";
+      en.lastSeenX = player.x;
+      en.lastSeenY = player.y;
+      en.alertTimer = 180;
+    } else if (en.alertTimer > 0) {
+      en.alertTimer--;
+      en.state = "search";
+    } else {
+      en.state = "patrol";
+    }
 
-      // Attack
-      if (dist < 1.1) {
-        en.attackCd -= dt;
-        if (en.attackCd <= 0 && player.invuln <= 0) {
-          player.hp -= en.damage;
-          player.invuln = 450;
-          spawnBlood(player.x, player.y, 4);
-          showMessage(en.name + " ударил тебя!");
-          updateHUD();
-          if (player.hp <= 0) die();
-          en.attackCd = 700;
-        }
+    if (en.state === "chase" || en.state === "attack") {
+      const nx = dx / Math.max(0.01, dist);
+      const ny = dy / Math.max(0.01, dist);
+      if (dist > en.attackRange * 0.85) {
+        const newX = en.x + nx * en.speed;
+        const newY = en.y + ny * en.speed;
+        if (map[Math.floor(en.y)][Math.floor(newX)] === 0) en.x = newX;
+        if (map[Math.floor(newY)][Math.floor(en.x)] === 0) en.y = newY;
       }
+      if (dist < en.attackRange && en.attackCd <= 0 && player.invuln <= 0) {
+        player.hp -= en.damage;
+        player.invuln = 500;
+        spawnBlood(player.x, player.y, 4);
+        showMessage(en.name + " ударил тебя!");
+        updateHUD();
+        if (player.hp <= 0) die();
+        en.attackCd = 850;
+      }
+    } else if (en.state === "search") {
+      const sx = en.lastSeenX - en.x;
+      const sy = en.lastSeenY - en.y;
+      const sd = Math.sqrt(sx * sx + sy * sy);
+      if (sd > 0.4) {
+        const newX = en.x + (sx / sd) * en.speed * 0.7;
+        const newY = en.y + (sy / sd) * en.speed * 0.7;
+        if (map[Math.floor(en.y)][Math.floor(newX)] === 0) en.x = newX;
+        if (map[Math.floor(newY)][Math.floor(en.x)] === 0) en.y = newY;
+      }
+    } else {
+      // patrol
+      en.patrolTimer--;
+      if (en.patrolTimer <= 0) {
+        en.patrolAngle += (Math.random() - 0.5) * 1.8;
+        en.patrolTimer = 50 + Math.random() * 90;
+      }
+      const newX = en.x + Math.cos(en.patrolAngle) * en.speed * 0.45;
+      const newY = en.y + Math.sin(en.patrolAngle) * en.speed * 0.45;
+      if (map[Math.floor(en.y)][Math.floor(newX)] === 0) en.x = newX;
+      else en.patrolAngle += Math.PI * 0.6;
+      if (map[Math.floor(newY)][Math.floor(en.x)] === 0) en.y = newY;
+      else en.patrolAngle += Math.PI * 0.6;
     }
   }
 
@@ -624,22 +707,37 @@ function update(dt) {
 
 // ---------- RENDER ----------
 function render() {
-  // Sky / ground
-  const grad = ctx.createLinearGradient(0, 0, 0, height);
-  grad.addColorStop(0, "#1a2030");
-  grad.addColorStop(0.5, "#2a3040");
-  grad.addColorStop(0.5, "#3a3530");
-  grad.addColorStop(1, "#2a2520");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, width, height);
+  // Sky — cold winter night with subtle gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.52);
+  skyGrad.addColorStop(0, "#0c1018");
+  skyGrad.addColorStop(0.4, "#1a2230");
+  skyGrad.addColorStop(1, "#2a3344");
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, width, height * 0.52);
 
-  // Snow on ground (simple)
-  ctx.fillStyle = "rgba(200,210,220,0.15)";
+  // Distant snow haze band
+  ctx.fillStyle = "rgba(180,195,210,0.08)";
+  ctx.fillRect(0, height * 0.38, width, height * 0.14);
+
+  // Ground — dirty snow
+  const groundGrad = ctx.createLinearGradient(0, height * 0.5, 0, height);
+  groundGrad.addColorStop(0, "#3a3835");
+  groundGrad.addColorStop(0.35, "#4a4640");
+  groundGrad.addColorStop(1, "#2e2a26");
+  ctx.fillStyle = groundGrad;
   ctx.fillRect(0, height * 0.5, width, height * 0.5);
 
-  // Raycast walls
-  const numRays = Math.min(width, 320); // performance
+  // Ground snow patches (subtle horizontal noise)
+  ctx.fillStyle = "rgba(210,220,230,0.12)";
+  for (let g = 0; g < 8; g++) {
+    const gy = height * 0.52 + (g / 8) * height * 0.48;
+    ctx.fillRect(0, gy, width, 3 + (g % 3));
+  }
+
+  // Raycast walls + z-buffer (so sprites hide behind walls)
+  const numRays = Math.min(width, 360);
   const rayWidth = width / numRays;
+  const zBuffer = new Float32Array(numRays);
 
   for (let i = 0; i < numRays; i++) {
     const rayAngle = player.dir - player.fov / 2 + (i / numRays) * player.fov;
@@ -647,22 +745,29 @@ function render() {
 
     // Fix fisheye
     const corrected = ray.dist * Math.cos(rayAngle - player.dir);
-    const wallH = (height * 0.85) / corrected;
+    zBuffer[i] = corrected;
 
+    const wallH = (height * 0.88) / Math.max(0.15, corrected);
     const top = (height - wallH) / 2;
-    const color = getWallColor(ray.hit, ray.side, corrected);
+    const color = getWallColor(ray.hit, ray.side, corrected, ray.hitX, ray.hitY);
 
     ctx.fillStyle = color;
-    ctx.fillRect(i * rayWidth, top, rayWidth + 1, wallH);
+    ctx.fillRect(i * rayWidth, top, rayWidth + 1.2, wallH);
 
-    // Simple texture noise
     if (ray.hit > 0) {
-      ctx.fillStyle = `rgba(0,0,0,${0.08 + (i % 3) * 0.02})`;
-      ctx.fillRect(i * rayWidth, top, rayWidth + 1, wallH * 0.15);
+      const strip = (Math.floor((ray.side ? ray.hitY : ray.hitX) * 10) % 5);
+      if (strip === 0) {
+        ctx.fillStyle = "rgba(0,0,0,0.22)";
+        ctx.fillRect(i * rayWidth, top, Math.max(1, rayWidth * 0.35), wallH);
+      }
+      ctx.fillStyle = "rgba(0,0,0,0.18)";
+      ctx.fillRect(i * rayWidth, top, rayWidth + 1, wallH * 0.08);
+      ctx.fillStyle = "rgba(0,0,0,0.12)";
+      ctx.fillRect(i * rayWidth, top + wallH * 0.9, rayWidth + 1, wallH * 0.1);
     }
   }
 
-  // Sprites: pickups + enemies (sorted by distance)
+  // Sprites: pickups + enemies (sorted far → near)
   const sprites = [];
 
   for (const p of pickups) {
@@ -688,39 +793,130 @@ function render() {
     while (a > Math.PI) a -= Math.PI * 2;
     while (a < -Math.PI) a += Math.PI * 2;
 
-    if (Math.abs(a) > player.fov * 0.7) continue;
+    if (Math.abs(a) > player.fov * 0.75) continue;
 
     const screenX = (0.5 + a / player.fov) * width;
     const size = (height * 0.6) / s.dist;
 
+    // Sprite width in ray columns for occlusion
+    const spriteHalfW = size * (s.type === "pickup" ? 0.28 : 0.32);
+    const startCol = Math.max(0, Math.floor((screenX - spriteHalfW) / rayWidth));
+    const endCol = Math.min(numRays - 1, Math.ceil((screenX + spriteHalfW) / rayWidth));
+
+    // If entire sprite is behind wall — skip
+    let anyVisible = false;
+    for (let c = startCol; c <= endCol; c++) {
+      if (s.dist < zBuffer[c]) { anyVisible = true; break; }
+    }
+    if (!anyVisible) continue;
+
+    // Draw only the columns that are in front of the wall
+    ctx.save();
+    ctx.beginPath();
+    for (let c = startCol; c <= endCol; c++) {
+      if (s.dist < zBuffer[c]) {
+        ctx.rect(c * rayWidth, 0, rayWidth + 0.5, height);
+      }
+    }
+    ctx.clip();
+
     if (s.type === "enemy") {
       const en = s.obj;
       const flash = en.hitFlash > 0;
-      ctx.fillStyle = flash ? "#ffffff" : en.color;
+      const bodyY = height / 2 - size * 0.32;
+      // Legs
+      ctx.fillStyle = flash ? "#ddd" : "#2a2a2a";
+      ctx.fillRect(screenX - size * 0.18, bodyY + size * 0.45, size * 0.12, size * 0.28);
+      ctx.fillRect(screenX + size * 0.06, bodyY + size * 0.45, size * 0.12, size * 0.28);
       // Body
-      ctx.fillRect(screenX - size * 0.25, height / 2 - size * 0.35, size * 0.5, size * 0.7);
+      ctx.fillStyle = flash ? "#ffffff" : en.color;
+      ctx.fillRect(screenX - size * 0.22, bodyY, size * 0.44, size * 0.5);
+      // Arms
+      ctx.fillStyle = flash ? "#eee" : "#3a3a3a";
+      ctx.fillRect(screenX - size * 0.32, bodyY + size * 0.08, size * 0.12, size * 0.32);
+      ctx.fillRect(screenX + size * 0.2, bodyY + size * 0.08, size * 0.12, size * 0.32);
       // Head
-      ctx.fillStyle = flash ? "#ffcccc" : "#ddbb99";
+      ctx.fillStyle = flash ? "#ffdddd" : "#d4b896";
       ctx.beginPath();
-      ctx.arc(screenX, height / 2 - size * 0.4, size * 0.18, 0, Math.PI * 2);
+      ctx.arc(screenX, bodyY - size * 0.08, size * 0.16, 0, Math.PI * 2);
+      ctx.fill();
+      // Hood
+      ctx.fillStyle = flash ? "#ccc" : "#1a1a1a";
+      ctx.beginPath();
+      ctx.arc(screenX, bodyY - size * 0.12, size * 0.17, Math.PI * 1.1, Math.PI * 1.9);
       ctx.fill();
       // HP bar
       if (en.hp < en.maxHp) {
-        ctx.fillStyle = "#333";
-        ctx.fillRect(screenX - size * 0.3, height / 2 - size * 0.55, size * 0.6, 5);
+        ctx.fillStyle = "#222";
+        ctx.fillRect(screenX - size * 0.28, bodyY - size * 0.38, size * 0.56, 5);
         ctx.fillStyle = "#c41e3a";
-        ctx.fillRect(screenX - size * 0.3, height / 2 - size * 0.55, size * 0.6 * (en.hp / en.maxHp), 5);
+        ctx.fillRect(screenX - size * 0.28, bodyY - size * 0.38, size * 0.56 * (en.hp / en.maxHp), 5);
       }
     } else {
-      // Pickup
+      // Floor weapon model (lying flat-ish on the ground)
       const w = WEAPONS[s.obj.type];
-      ctx.fillStyle = w ? w.color : "#ffff00";
-      ctx.fillRect(screenX - size * 0.12, height / 2 - size * 0.1, size * 0.24, size * 0.35);
-      ctx.fillStyle = "#fff";
-      ctx.font = `${Math.max(10, size * 0.15)}px monospace`;
-      ctx.textAlign = "center";
-      ctx.fillText("!", screenX, height / 2 - size * 0.15);
+      const col = w ? w.color : "#ffff00";
+      const baseY = height / 2 + size * 0.18;
+      const scale = size * 0.55;
+
+      ctx.save();
+      ctx.translate(screenX, baseY);
+      // slight perspective tilt
+      ctx.scale(1, 0.55);
+      ctx.rotate(-0.35);
+
+      if (s.obj.type === "pistol") {
+        ctx.fillStyle = "#2a2a2a";
+        ctx.fillRect(-scale * 0.55, -scale * 0.12, scale * 0.9, scale * 0.22);
+        ctx.fillStyle = "#444";
+        ctx.fillRect(scale * 0.25, -scale * 0.08, scale * 0.4, scale * 0.12);
+        ctx.fillStyle = "#1a1a1a";
+        ctx.fillRect(-scale * 0.35, scale * 0.02, scale * 0.22, scale * 0.28);
+      } else if (s.obj.type === "chainsaw") {
+        ctx.fillStyle = "#333";
+        ctx.fillRect(-scale * 0.5, -scale * 0.15, scale * 1.0, scale * 0.28);
+        ctx.fillStyle = "#666";
+        ctx.fillRect(scale * 0.2, -scale * 0.28, scale * 0.45, scale * 0.5);
+        ctx.fillStyle = "#222";
+        for (let t = 0; t < 4; t++) ctx.fillRect(scale * 0.28 + t * scale * 0.1, -scale * 0.22, scale * 0.05, scale * 0.38);
+      } else if (s.obj.type === "hammer") {
+        ctx.fillStyle = "#5a4030";
+        ctx.fillRect(-scale * 0.12, -scale * 0.55, scale * 0.2, scale * 1.0);
+        ctx.fillStyle = "#888";
+        ctx.fillRect(-scale * 0.35, -scale * 0.6, scale * 0.7, scale * 0.28);
+      } else if (s.obj.type === "knife") {
+        ctx.fillStyle = "#ccc";
+        ctx.fillRect(-scale * 0.08, -scale * 0.5, scale * 0.14, scale * 0.7);
+        ctx.fillStyle = "#4a3020";
+        ctx.fillRect(-scale * 0.1, scale * 0.15, scale * 0.18, scale * 0.35);
+      } else if (s.obj.type === "bottle") {
+        ctx.fillStyle = "#6aafd4";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, scale * 0.16, scale * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#8cc8e0";
+        ctx.fillRect(-scale * 0.08, -scale * 0.55, scale * 0.16, scale * 0.25);
+        // broken edge
+        ctx.fillStyle = "#a0d4ee";
+        ctx.beginPath();
+        ctx.moveTo(-scale * 0.1, -scale * 0.55);
+        ctx.lineTo(0, -scale * 0.7);
+        ctx.lineTo(scale * 0.1, -scale * 0.55);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = col;
+        ctx.fillRect(-scale * 0.2, -scale * 0.15, scale * 0.4, scale * 0.3);
+      }
+
+      // soft shadow under weapon
+      ctx.restore();
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      ctx.beginPath();
+      ctx.ellipse(screenX, height / 2 + size * 0.28, size * 0.28, size * 0.08, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
+
+    ctx.restore();
   }
 
   // Blood particles (screen space approximation)
@@ -742,10 +938,16 @@ function render() {
     ctx.fill();
   }
 
-  // Snow overlay
-  ctx.fillStyle = "rgba(220,230,240,0.7)";
+  // Snow overlay — layered flakes
   for (const s of snowParticles) {
-    ctx.fillRect(s.x, s.y, s.size, s.size);
+    ctx.fillStyle = `rgba(220,230,245,${s.alpha || 0.6})`;
+    if (s.size > 2.2) {
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.size * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillRect(s.x, s.y, s.size, s.size);
+    }
   }
 
   // Weapon viewmodel
@@ -823,3 +1025,4 @@ requestAnimationFrame(loop);
 
 // Init snow even on title
 initSnow();
+document.body.classList.add("show-cursor");
