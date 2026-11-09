@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>КРОВЬ НА СНЕГУ — Южно-Словенко</title>
+  <link rel="stylesheet" href="CSS/style.css">
+</head>
+<body>
+  <div id="ui">
+    <!-- ========== TITLE / MAIN MENU ========== -->
+    <div id="title-screen">
+      <div class="menu-bg-fx"></div>
+      <div class="menu-blood-drip"></div>
+
+      <div class="menu-panel">
+        <p class="menu-tag">РЕТРО-ШУТЕР · 199X</p>
+        <h1 class="menu-title">
+          <span class="t-line">КРОВЬ</span>
+          <span class="t-line t-red">НА СНЕГУ</span>
+        </h1>
+        <p class="subtitle">Южно-Словенко</p>
+        <p class="desc">Грязный ретро-шутер. Зима. Снег. Кровь.<br>Гопники. Менты. Всё оружие ломается.<br>3 уровня. Ищи переулок.</p>
+
+        <div class="menu-buttons">
+          <button id="start-btn" class="btn-main">▶  ИГРАТЬ</button>
+          <button id="menu-settings-btn" class="btn-sec">⚙  НАСТРОЙКИ</button>
+        </div>
+
+        <div class="controls-box">
+          <div class="ctrl-row"><kbd>WASD</kbd> ходить</div>
+          <div class="ctrl-row"><kbd>МЫШЬ</kbd> смотреть · <kbd>ЛКМ</kbd> бить</div>
+          <div class="ctrl-row"><kbd>E</kbd> подобрать / бросить · <kbd>Esc</kbd> меню</div>
+          <div class="ctrl-row"><kbd>Caps Lock</kbd> курсор</div>
+        </div>
+
+        <p class="warning">Все хотят тебя убить.</p>
+      </div>
+    </div>
+
+    <!-- ========== HUD ========== -->
+    <div id="hud" class="hidden">
+      <div id="level-name"></div>
+      <div id="weapon-name">Кулаки</div>
+      <div id="health-bar-container" class="hidden">
+        <div id="health-bar-bg">
+          <div id="health-bar-fill"></div>
+        </div>
+        <div id="health-num">100</div>
+      </div>
+      <div id="health" class="hidden">HP: 100</div>
+      <div id="ammo"></div>
+      <div id="message"></div>
+    </div>
+
+    <!-- ========== DEATH ========== -->
+    <div id="death-screen" class="hidden">
+      <div class="menu-bg-fx"></div>
+      <h2>ТЫ СДОХ</h2>
+      <p class="death-sub">Южно-Словенко тебя сожрало.</p>
+      <p class="restart-hint">Что дальше?</p>
+      <div class="death-buttons">
+        <button id="restart-btn" class="btn-main">ВСТАТЬ</button>
+        <button id="menu-btn" class="btn-sec">В МЕНЮ</button>
+      </div>
+    </div>
+
+    <!-- ========== SETTINGS ========== -->
+    <div id="settings-screen" class="hidden">
+      <div class="settings-panel">
+        <h2>НАСТРОЙКИ</h2>
+        <div class="settings-row">
+          <label>Громкость музыки</label>
+          <div class="settings-control">
+            <input type="range" id="vol-music" min="0" max="100" value="45">
+            <span id="vol-music-val">45%</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>Чувствительность мыши</label>
+          <div class="settings-control">
+            <input type="range" id="mouse-sens" min="1" max="20" value="3">
+            <span id="mouse-sens-val">3</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>Отображение здоровья</label>
+          <div class="settings-control">
+            <select id="health-mode">
+              <option value="blood">Кровь по бокам</option>
+              <option value="bar">Полоска снизу с числом</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>Поле зрения (FOV)</label>
+          <div class="settings-control">
+            <input type="range" id="fov-range" min="50" max="110" value="60">
+            <span id="fov-val">60°</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>Мини-карта</label>
+          <div class="settings-control">
+            <select id="minimap-mode">
+              <option value="on">Включена</option>
+              <option value="off">Выключена</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-actions" id="settings-ingame-actions">
+          <button id="settings-restart" class="btn-sec">РЕСТАРТ УРОВНЯ</button>
+          <button id="settings-menu" class="btn-sec">В ГЛАВНОЕ МЕНЮ</button>
+        </div>
+        <button id="settings-close" class="btn-main">ЗАКРЫТЬ (Esc)</button>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="game"></canvas>
+  <div id="crosshair" class="hidden">+</div>
+  <div id="blood-overlay" class="hidden"></div>
+
+  <script src="JS/game.js"></script>
+</body>
+</html>
