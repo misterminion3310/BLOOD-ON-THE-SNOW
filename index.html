@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>КРОВЬ НА СНЕГУ — Южно-Словенко</title>
+  <link rel="stylesheet" href="CSS/style.css">
+</head>
+<body>
+  <div id="ui">
+    <!-- ========== TITLE / MAIN MENU ========== -->
+    <div id="title-screen">
+      <div class="menu-bg-fx"></div>
+      <div class="menu-blood-drip"></div>
+
+      <div class="menu-panel">
+        <p class="menu-tag">РЕТРО-ШУТЕР · 199X</p>
+        <h1 class="menu-title">
+          <span class="t-line">КРОВЬ</span>
+          <span class="t-line t-red">НА СНЕГУ</span>
+        </h1>
+        <p class="subtitle">Южно-Словенко</p>
+        <p class="desc">Грязный ретро-шутер. Зима. Снег. Кровь.<br>Гопники. Ломающееся оружие. Три улицы.<br>Зачисти двор — найди переулок.</p>
+
+        <div class="menu-buttons">
+          <button id="start-btn" class="btn-main">▶  ИГРАТЬ</button>
+          <button id="menu-settings-btn" class="btn-sec">⚙  НАСТРОЙКИ</button>
+          <button id="fullscreen-btn" class="btn-sec">⛶  ПОЛНЫЙ ЭКРАН</button>
+        </div>
+
+        <div class="controls-box">
+          <div class="ctrl-row"><kbd>WASD</kbd> / стик — ходить</div>
+          <div class="ctrl-row"><kbd>МЫШЬ</kbd> / правый стик — смотреть</div>
+          <div class="ctrl-row"><kbd>ЛКМ</kbd> / RT — бить · <kbd>E</kbd> / A — подобрать</div>
+          <div class="ctrl-row">Телефон: тач-стики и кнопки на экране</div>
+          <div class="ctrl-row"><kbd>Esc</kbd> / Start — меню</div>
+        </div>
+
+        <p class="warning">Все хотят тебя убить.</p>
+      </div>
+    </div>
+
+    <!-- ========== HUD ========== -->
+    <div id="hud" class="hidden">
+      <div id="level-name"></div>
+      <div id="weapon-name">Кулаки</div>
+      <div id="health-bar-container" class="hidden">
+        <div id="health-bar-bg">
+          <div id="health-bar-fill"></div>
+        </div>
+        <div id="health-num">100</div>
+      </div>
+      <div id="health" class="hidden">HP: 100</div>
+      <div id="ammo"></div>
+      <div id="message"></div>
+      <div id="hint-banner" class="hidden"></div>
+    </div>
+
+    <!-- ========== DEATH ========== -->
+    <div id="death-screen" class="hidden">
+      <div class="menu-bg-fx"></div>
+      <h2>ТЫ СДОХ</h2>
+      <p class="death-sub">Южно-Словенко тебя сожрало.</p>
+      <p id="death-stats" class="death-stats"></p>
+      <p class="restart-hint">Что дальше?</p>
+      <div class="death-buttons">
+        <button id="restart-btn" class="btn-main">ВСТАТЬ</button>
+        <button id="menu-btn" class="btn-sec">В МЕНЮ</button>
+      </div>
+    </div>
+
+    <!-- ========== WIN ========== -->
+    <div id="win-screen" class="hidden">
+      <div class="menu-bg-fx"></div>
+      <h2 class="win-title">ТЫ ВЫШЕЛ</h2>
+      <p class="death-sub">Южно-Словенко осталось позади.</p>
+      <p id="win-stats" class="death-stats"></p>
+      <div class="death-buttons">
+        <button id="win-again-btn" class="btn-main">ЕЩЁ РАЗ</button>
+        <button id="win-menu-btn" class="btn-sec">В МЕНЮ</button>
+      </div>
+    </div>
+
+    <!-- ========== SETTINGS ========== -->
+    <div id="settings-screen" class="hidden">
+      <div class="settings-panel">
+        <h2>НАСТРОЙКИ</h2>
+        <div class="settings-row">
+          <label>Громкость музыки</label>
+          <div class="settings-control">
+            <input type="range" id="vol-music" min="0" max="100" value="45">
+            <span id="vol-music-val">45%</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>Чувствительность мыши</label>
+          <div class="settings-control">
+            <input type="range" id="mouse-sens" min="1" max="20" value="3">
+            <span id="mouse-sens-val">3</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>Отображение здоровья</label>
+          <div class="settings-control">
+            <select id="health-mode">
+              <option value="blood">Кровь по бокам</option>
+              <option value="bar">Полоска снизу с числом</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>Поле зрения (FOV)</label>
+          <div class="settings-control">
+            <input type="range" id="fov-range" min="50" max="110" value="60">
+            <span id="fov-val">60°</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>Мини-карта</label>
+          <div class="settings-control">
+            <select id="minimap-mode">
+              <option value="on">Включена</option>
+              <option value="off">Выключена</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-actions" id="settings-ingame-actions">
+          <button id="settings-restart" class="btn-sec">РЕСТАРТ УРОВНЯ</button>
+          <button id="settings-menu" class="btn-sec">В ГЛАВНОЕ МЕНЮ</button>
+        </div>
+        <button id="settings-close" class="btn-main">ЗАКРЫТЬ (Esc)</button>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="game"></canvas>
+  <div id="crosshair" class="hidden">+</div>
+  <div id="blood-overlay" class="hidden"></div>
+
+  <!-- Mobile touch controls -->
+  <div id="touch-controls" class="hidden">
+    <div id="stick-move" class="touch-stick">
+      <div class="stick-base"></div>
+      <div class="stick-knob" id="stick-move-knob"></div>
+    </div>
+    <div id="stick-look" class="touch-stick touch-stick-right">
+      <div class="stick-base"></div>
+      <div class="stick-knob" id="stick-look-knob"></div>
+    </div>
+    <button type="button" id="touch-attack" class="touch-btn touch-attack">УДАР</button>
+    <button type="button" id="touch-use" class="touch-btn touch-use">E</button>
+    <button type="button" id="touch-pause" class="touch-btn touch-pause">☰</button>
+  </div>
+
+  <script src="JS/game.js"></script>
+</body>
+</html>
