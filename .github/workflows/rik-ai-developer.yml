@@ -1,0 +1,52 @@
+
+name: RIK AI Developer
+
+on:
+  schedule:
+    - cron: '0 5-19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rik-ai-developer
+  cancel-in-progress: false
+
+jobs:
+  improve-game:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout branch 2.0
+        uses: actions/checkout@v4
+        with:
+          ref: '2.0'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run RIK AI Developer
+        id: ai
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: openrouter/free
+        run: python rik_ai_developer.py
+
+      - name: Commit changes
+        if: steps.ai.outputs.changed == 'true'
+        run: |
+          git config user.name "RIK AI Developer"
+          git config user.email "rik-ai-developer[bot]@users.noreply.github.com"
+          git add -- '*.html' '*.css' '*.js' '*.mjs' '*.json' '*.md' '*.txt'
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "RIK AI: automatic game improvement"
+          git push origin HEAD:2.0
